@@ -1,12 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { X, LayoutDashboard, PlusCircle, Shield, FileText, TrendingUp, BarChart3, Building2, Users, Settings, ChevronDown, DollarSign, Wallet, BookOpen, History, FileCheck, UserCheck, FileSpreadsheet, Building, Menu } from 'lucide-react';
 import { useCurrentUser, CHURCH_ROLES } from '@/contexts/CurrentUserContext';
 import { Button } from '@/components/ui/button';
+import { isDemoMode } from '@/lib/demoMode';
 
 export default function Sidebar({ open, onClose }) {
   const location = useLocation();
   const { churchRole, canAccessPage, roleLabel, accessScope, userBranchId, user } = useCurrentUser();
+
+  const demoMode = isDemoMode();
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const menuSections = [
     { label: 'Financial', items: [
@@ -23,18 +27,30 @@ export default function Sidebar({ open, onClose }) {
       { name: 'Reports', path: '/reports', icon: BarChart3, page: 'reports' },
       { name: 'Member Summary', path: '/member-summary', icon: UserCheck, page: 'memberSummary' },
     ]},
-    { label: 'Administration', items: [
-      { name: 'Categories', path: '/categories', icon: FileSpreadsheet, page: 'categories' },
-      { name: 'Branches', path: '/branches', icon: Building2, page: 'branches' },
-      { name: 'Departments', path: '/departments', icon: Users, page: 'departments' },
-      { name: 'Users', path: '/users', icon: UserCheck, page: 'users' },
-      { name: 'Approval Rules', path: '/approval-rules', icon: Shield, page: 'approvalRules' },
-      { name: 'Audit Logs', path: '/audit-logs', icon: History, page: 'auditLogs' },
-    ]},
+    ...(demoMode ? [] : [
+      { label: 'Administration', items: [
+        { name: 'Categories', path: '/categories', icon: FileSpreadsheet, page: 'categories' },
+        { name: 'Branches', path: '/branches', icon: Building2, page: 'branches' },
+        { name: 'Departments', path: '/departments', icon: Users, page: 'departments' },
+        { name: 'Users', path: '/users', icon: UserCheck, page: 'users' },
+        { name: 'Approval Rules', path: '/approval-rules', icon: Shield, page: 'approvalRules' },
+        { name: 'Audit Logs', path: '/audit-logs', icon: History, page: 'auditLogs' },
+      ]},
+    ]),
     { label: 'Settings', items: [
       { name: 'Church Profile', path: '/church-profile', icon: Building, page: 'churchProfile' },
       { name: 'Settings', path: '/settings', icon: Settings, page: 'settings' },
     ]},
+    ...(demoMode ? [
+      { label: 'Advanced', items: [
+        { name: 'Users', path: '/users', icon: UserCheck, page: 'users' },
+        { name: 'Categories', path: '/categories', icon: FileSpreadsheet, page: 'categories' },
+        { name: 'Branches', path: '/branches', icon: Building2, page: 'branches' },
+        { name: 'Departments', path: '/departments', icon: Users, page: 'departments' },
+        { name: 'Approval Rules', path: '/approval-rules', icon: Shield, page: 'approvalRules' },
+        { name: 'Audit Logs', path: '/audit-logs', icon: History, page: 'auditLogs' },
+      ]},
+    ] : []),
   ];
 
   const canView = (item) => {
@@ -57,22 +73,35 @@ export default function Sidebar({ open, onClose }) {
         <Button variant="ghost" size="icon" className="lg:hidden" onClick={onClose}><X className="w-4 h-4" /></Button>
       </div>
       <nav className="flex-1 overflow-y-auto p-3 space-y-4">
-        {filtered.map((section, i) => (
-          <div key={i}>
-            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1 px-2">{section.label}</p>
-            <div className="space-y-0.5">
-              {section.items.map(item => {
-                const active = location.pathname === item.path;
-                return (
-                  <Link key={item.path} to={item.path} onClick={onClose}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${active ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}>
-                    <item.icon className="w-4 h-4" /> {item.name}
-                  </Link>
-                );
-              })}
+        {filtered.map((section, i) => {
+          const isAdvanced = section.label === 'Advanced';
+          return (
+            <div key={i}>
+              {isAdvanced ? (
+                <button onClick={() => setAdvancedOpen(!advancedOpen)}
+                  className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1 px-2 w-full hover:text-foreground transition-colors">
+                  <span className="flex-1 text-left">{section.label}</span>
+                  <ChevronDown className={`w-3 h-3 transition-transform ${advancedOpen ? 'rotate-180' : ''}`} />
+                </button>
+              ) : (
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1 px-2">{section.label}</p>
+              )}
+              {(isAdvanced ? advancedOpen : true) && (
+                <div className="space-y-0.5">
+                  {section.items.map(item => {
+                    const active = location.pathname === item.path;
+                    return (
+                      <Link key={item.path} to={item.path} onClick={onClose}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${active ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}>
+                        <item.icon className="w-4 h-4" /> {item.name}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </nav>
       <div className="p-3 border-t text-xs text-muted-foreground">
         {accessScope === 'assigned_branch' ? `Branch: ${userBranchId || 'Not set'}` : 'All Branches'}

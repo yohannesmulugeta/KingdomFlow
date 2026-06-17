@@ -32,6 +32,7 @@ import RequestMoney from '@/pages/RequestMoney';
 import MemberSummary from '@/pages/MemberSummary';
 import AuditLogs from '@/pages/AuditLogs';
 import Settings from '@/pages/Settings';
+import DemoLogin from '@/pages/DemoLogin';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -56,6 +57,7 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/demo-login" element={<DemoLogin />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>

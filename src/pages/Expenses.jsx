@@ -6,7 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowUpCircle, Ban, Loader2 } from 'lucide-react';
+import { ArrowUpCircle, Ban, Loader2, Wand2 } from 'lucide-react';
+import { isDemoMode } from '@/lib/demoMode';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import { useCurrentUser } from '@/contexts/CurrentUserContext';
@@ -35,6 +36,8 @@ export default function Expenses() {
   const [saving, setSaving] = useState(false);
   const [voidOpen, setVoidOpen] = useState(null);
   const [voidReason, setVoidReason] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const demoMode = isDemoMode();
 
   const load = () => {
     base44.functions.invoke('getReports', {
@@ -47,6 +50,16 @@ export default function Expenses() {
   useEffect(load, [page, userBranchId]);
 
   const fm = (n) => new Intl.NumberFormat().format(n || 0);
+
+  const fillSampleExpense = () => {
+    setForm({
+      amount: '2000', date: new Date().toISOString().split('T')[0],
+      description: 'Demo ministry materials', branch_id: userBranchId || '',
+      category_id: '', category_name: 'Ministry Expense', fund_id: '',
+      payment_method: 'cash', vendor_payee: 'Demo Supplier',
+      receipt_needed: true, notes: 'Demo ministry materials', status: 'draft',
+    });
+  };
 
   const handleSave = async (status) => {
     if (!form.amount || parseFloat(form.amount) <= 0) { toast({ title: 'Valid amount required', variant: 'destructive' }); return; }
@@ -94,6 +107,11 @@ export default function Expenses() {
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-lg"><DialogHeader><DialogTitle className="font-heading">Record Expense</DialogTitle></DialogHeader>
           <div className="space-y-3 mt-2 max-h-[60vh] overflow-y-auto">
+            {demoMode && (
+              <Button variant="outline" size="sm" className="w-full gap-1 border-dashed border-2 bg-primary/5" onClick={fillSampleExpense}>
+                <Wand2 className="w-3 h-3" /> Add Sample Expense
+              </Button>
+            )}
             <div className="grid grid-cols-2 gap-3"><div><Label>Amount *</Label><Input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} /></div><div><Label>Date</Label><Input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} /></div></div>
             <div><Label>Description</Label><Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
             <div className="grid grid-cols-2 gap-3">
@@ -103,6 +121,7 @@ export default function Expenses() {
             <div className="grid grid-cols-2 gap-3"><div><Label>Branch</Label><Select value={form.branch_id || 'none'} onValueChange={v => setForm({ ...form, branch_id: v === 'none' ? '' : v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{branches.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent></Select></div><div><Label>Payment Method</Label><Select value={form.payment_method} onValueChange={v => setForm({ ...form, payment_method: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="cash">Cash</SelectItem><SelectItem value="bank_transfer">Bank Transfer</SelectItem><SelectItem value="telebirr">Telebirr</SelectItem><SelectItem value="check">Check</SelectItem><SelectItem value="mobile_money">Mobile Money</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div></div>
             <div><Label>Vendor / Payee</Label><Input value={form.vendor_payee} onChange={e => setForm({ ...form, vendor_payee: e.target.value })} /></div>
             <div><Label>Notes</Label><Input value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
+            <button type="button" className="text-xs text-muted-foreground hover:text-foreground underline" onClick={() => setShowAdvanced(!showAdvanced)}>{showAdvanced ? 'Hide' : 'Show'} Optional Details</button>
           </div>
           <div className="flex justify-end gap-2 mt-4"><Button variant="outline" onClick={() => setFormOpen(false)}>Cancel</Button><Button variant="outline" onClick={() => handleSave('draft')} disabled={saving}>Save Draft</Button><Button onClick={() => handleSave('pending')} disabled={saving}>{saving ? 'Saving...' : 'Submit'}</Button></div>
         </DialogContent>

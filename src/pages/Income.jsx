@@ -6,7 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PlusCircle, ArrowDownCircle, Ban, Pencil, Loader2 } from 'lucide-react';
+import { PlusCircle, ArrowDownCircle, Ban, Pencil, Loader2, Wand2 } from 'lucide-react';
+import { isDemoMode } from '@/lib/demoMode';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import { useCurrentUser } from '@/contexts/CurrentUserContext';
@@ -34,6 +35,8 @@ export default function Income() {
   const [saving, setSaving] = useState(false);
   const [voidOpen, setVoidOpen] = useState(null);
   const [voidReason, setVoidReason] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const demoMode = isDemoMode();
 
   const load = () => {
     base44.functions.invoke('getReports', {
@@ -50,6 +53,16 @@ export default function Income() {
   useEffect(load, [page, userBranchId]);
 
   const fm = (n) => new Intl.NumberFormat().format(n || 0);
+
+  const fillSampleIncome = () => {
+    setForm({
+      amount: '5000', date: new Date().toISOString().split('T')[0],
+      description: 'Demo Sunday offering', branch_id: userBranchId || '',
+      category_id: '', category_name: 'Offering', fund_id: '',
+      payment_method: 'cash', donor_name: '', is_anonymous_donor: false,
+      receipt_needed: false, notes: 'Demo Sunday offering', status: 'draft',
+    });
+  };
 
   const handleSave = async (status) => {
     if (!form.amount || parseFloat(form.amount) <= 0) { toast({ title: 'Valid amount is required', variant: 'destructive' }); return; }
@@ -104,6 +117,11 @@ export default function Income() {
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
         <DialogContent className="max-w-lg"><DialogHeader><DialogTitle className="font-heading">Record Income</DialogTitle></DialogHeader>
           <div className="space-y-3 mt-2 max-h-[60vh] overflow-y-auto">
+            {demoMode && (
+              <Button variant="outline" size="sm" className="w-full gap-1 border-dashed border-2 bg-primary/5" onClick={fillSampleIncome}>
+                <Wand2 className="w-3 h-3" /> Add Sample Income
+              </Button>
+            )}
             <div className="grid grid-cols-2 gap-3"><div><Label>Amount *</Label><Input type="number" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} /></div><div><Label>Date</Label><Input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} /></div></div>
             <div><Label>Description</Label><Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
             <div className="grid grid-cols-2 gap-3">
@@ -111,8 +129,13 @@ export default function Income() {
               <div><Label>Fund</Label><Select value={form.fund_id || 'none'} onValueChange={v => setForm({ ...form, fund_id: v === 'none' ? '' : v })}><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger><SelectContent><SelectItem value="none">None</SelectItem>{funds.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}</SelectContent></Select></div>
             </div>
             <div className="grid grid-cols-2 gap-3"><div><Label>Branch</Label><Select value={form.branch_id || 'none'} onValueChange={v => setForm({ ...form, branch_id: v === 'none' ? '' : v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{branches.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent></Select></div><div><Label>Payment Method</Label><Select value={form.payment_method} onValueChange={v => setForm({ ...form, payment_method: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="cash">Cash</SelectItem><SelectItem value="bank_transfer">Bank Transfer</SelectItem><SelectItem value="telebirr">Telebirr</SelectItem><SelectItem value="check">Check</SelectItem><SelectItem value="mobile_money">Mobile Money</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select></div></div>
-            <div><Label>Donor Name</Label><Input value={form.donor_name} onChange={e => setForm({ ...form, donor_name: e.target.value })} /></div>
             <div><Label>Notes</Label><Input value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
+            <button type="button" className="text-xs text-muted-foreground hover:text-foreground underline" onClick={() => setShowAdvanced(!showAdvanced)}>{showAdvanced ? 'Hide' : 'Show'} Optional Details</button>
+            {showAdvanced && (
+              <div className="space-y-3 pt-1">
+                <div><Label>Donor Name</Label><Input value={form.donor_name} onChange={e => setForm({ ...form, donor_name: e.target.value })} /></div>
+              </div>
+            )}
           </div>
           <div className="flex justify-end gap-2 mt-4"><Button variant="outline" onClick={() => setFormOpen(false)}>Cancel</Button><Button variant="outline" onClick={() => handleSave('draft')} disabled={saving}>Save Draft</Button><Button onClick={() => handleSave('pending')} disabled={saving}>{saving ? 'Saving...' : 'Submit'}</Button></div>
         </DialogContent>

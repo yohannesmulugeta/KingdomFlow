@@ -1,14 +1,29 @@
 import React from 'react';
-import { Menu, LogOut, User } from 'lucide-react';
+import { Menu, LogOut, User, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { CHURCH_ROLES } from '@/contexts/CurrentUserContext';
+import { isDemoMode } from '@/lib/demoMode';
 
 export default function TopBar({ onMenuClick, currentUser }) {
   const handleLogout = () => {
     base44.auth.logout('/login');
   };
+
+  const handleResetDemo = async () => {
+    if (!confirm('Reset all demo data? This will restore original sample data.')) return;
+    try {
+      await base44.functions.invoke('resetDemoData', {});
+      localStorage.removeItem('kingdomflow_demo_mode');
+      localStorage.removeItem('kingdomflow_demo_steps');
+      window.location.href = '/demo-login';
+    } catch {
+      alert('Reset failed. Please try again.');
+    }
+  };
+
+  const demoMode = isDemoMode();
 
   const churchRole = currentUser?.church_role;
   const roleLabel = CHURCH_ROLES[churchRole] || 'Not configured';
@@ -23,6 +38,11 @@ export default function TopBar({ onMenuClick, currentUser }) {
       </div>
 
       <div className="flex items-center gap-3">
+        {demoMode && (
+          <Button variant="outline" size="sm" className="h-7 text-xs text-amber-700 border-amber-300 hover:bg-amber-50" onClick={handleResetDemo}>
+            <RotateCcw className="w-3 h-3 mr-1" /> Reset Demo
+          </Button>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="gap-2">
