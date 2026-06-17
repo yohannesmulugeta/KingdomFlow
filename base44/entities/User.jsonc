@@ -2,7 +2,7 @@
   "name": "User",
   "type": "object",
   "properties": {
-    "role": {
+    "church_role": {
       "type": "string",
       "enum": [
         "church_admin",
@@ -15,10 +15,28 @@
     },
     "branch_id": {
       "type": "string",
-      "description": "If set, user is branch-specific; if empty, user is church-wide"
+      "description": "Assigned branch for branch-specific users"
     },
     "department_id": {
-      "type": "string"
+      "type": "string",
+      "description": "Assigned department"
+    },
+    "access_scope": {
+      "type": "string",
+      "enum": [
+        "all_branches",
+        "assigned_branch"
+      ],
+      "default": "assigned_branch"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "suspended",
+        "pending"
+      ],
+      "default": "active"
     },
     "phone": {
       "type": "string"
