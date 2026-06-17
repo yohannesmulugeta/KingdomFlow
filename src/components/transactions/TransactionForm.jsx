@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import useCurrentUser from '@/hooks/useCurrentUser';
+import { useCurrentUser } from '@/contexts/CurrentUserContext';
 
 const PAYMENT_METHODS = [
   { value: 'cash', label: 'Cash' },
@@ -18,7 +18,8 @@ const PAYMENT_METHODS = [
 ];
 
 export default function TransactionForm({ open, onOpenChange, type, editing, onSaved }) {
-  const { isBranchSpecific, userBranchId } = useCurrentUser();
+  const { accessScope, userBranchId } = useCurrentUser();
+  const isBranchSpecific = accessScope === 'assigned_branch';
   const [branches, setBranches] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [funds, setFunds] = useState([]);
