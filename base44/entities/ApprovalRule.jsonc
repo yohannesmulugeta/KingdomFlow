@@ -1,0 +1,46 @@
+{
+  "name": "ApprovalRule",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "transaction_type": {
+      "type": "string",
+      "enum": [
+        "income",
+        "expense",
+        "both"
+      ],
+      "default": "both"
+    },
+    "min_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "max_amount": {
+      "type": "number"
+    },
+    "required_role": {
+      "type": "string",
+      "enum": [
+        "branch_manager",
+        "finance_officer",
+        "church_admin"
+      ],
+      "default": "branch_manager"
+    },
+    "branch_id": {
+      "type": "string",
+      "description": "If set, rule applies only to this branch"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "name",
+    "required_role"
+  ]
+}

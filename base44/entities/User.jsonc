@@ -1,0 +1,31 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "branch_manager",
+        "finance_officer",
+        "accountant",
+        "viewer"
+      ],
+      "default": "viewer"
+    },
+    "branch_id": {
+      "type": "string",
+      "description": "If set, user is branch-specific; if empty, user is church-wide"
+    },
+    "department_id": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  }
+}
