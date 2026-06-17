@@ -21,8 +21,8 @@ export default function Branches() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ name: '', code: '', address: '', city: '', phone: '', manager_name: '' });
 
-  const load = () => base44.entities.Branch.list().then(setBranches).finally(() => setLoading(false));
-  useEffect(load, []);
+  const load = () => { base44.entities.Branch.list().then(setBranches).finally(() => setLoading(false)); };
+  useEffect(() => { load(); }, []);
 
   const handleSave = async () => {
     if (!form.name) return;

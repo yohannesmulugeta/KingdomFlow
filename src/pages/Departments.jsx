@@ -22,8 +22,8 @@ export default function Departments() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ name: '', code: '', branch_id: '', description: '' });
 
-  const load = () => Promise.all([base44.entities.Department.list(), base44.entities.Branch.list()]).then(([d, b]) => { setDepartments(d); setBranches(b); setLoading(false); });
-  useEffect(load, []);
+  const load = () => { Promise.all([base44.entities.Department.list(), base44.entities.Branch.list()]).then(([d, b]) => { setDepartments(d); setBranches(b); setLoading(false); }); };
+  useEffect(() => { load(); }, []);
 
   const branchName = (id) => branches.find(b => b.id === id)?.name || 'Church-wide';
 
