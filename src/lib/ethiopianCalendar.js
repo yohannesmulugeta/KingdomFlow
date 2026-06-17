@@ -1,25 +1,15 @@
 /**
  * Ethiopian Calendar Conversion Utilities
  *
- * Ethiopian calendar (Amete Mihret) is approximately 7-8 years behind Gregorian.
- * Ethiopian New Year falls on September 11 (or September 12 in Gregorian leap year).
+ * Ethiopian New Year (Meskerem 1): September 11 (or Sep 12 in the year
+ * before a Gregorian leap year, i.e. when the Ethiopian year is a leap year).
  *
- * Ethiopian months (13):
- * 1. Meskerem (30 days) — starts Sep 11/12
- * 2. Tikimt (30)
- * 3. Hidar (30)
- * 4. Tahsas (30)
- * 5. Tir (30)
- * 6. Yekatit (30)
- * 7. Megabit (30)
- * 8. Miazia (30)
- * 9. Ginbot (30)
- * 10. Sene (30)
- * 11. Hamle (30)
- * 12. Nehase (30)
- * 13. Pagume (5 or 6 days in Ethiopian leap year)
+ * Ethiopian months (13 × 30 + 5/6 Pagume):
+ * Meskerem, Tikimt, Hidar, Tahsas, Tir, Yekatit, Megabit, Miazia,
+ * Ginbot, Sene, Hamle, Nehase, Pagume
  *
- * Ethiopian leap year: year % 4 === 0 (within Ethiopian calendar)
+ * Ethiopian leap year: year % 4 === 0
+ * Ethiopian year ≈ Gregorian year - 7 or -8
  */
 
 const ETHIOPIAN_MONTHS = [
@@ -28,87 +18,89 @@ const ETHIOPIAN_MONTHS = [
   'Hamle', 'Nehase', 'Pagume'
 ];
 
-const ETHIOPIAN_MONTHS_NUMBERED = [
-  '1. Meskerem', '2. Tikimt', '3. Hidar', '4. Tahsas', '5. Tir',
-  '6. Yekatit', '7. Megabit', '8. Miazia', '9. Ginbot', '10. Sene',
-  '11. Hamle', '12. Nehase', '13. Pagume'
-];
-
-// JDN at Ethiopian Epoch: 1 Meskerem 1
-// Gregorian: September 12, 7 AD (Julian) = JDN 1,724,225 (approximate)
-// More precisely: JD 1724225.5 for Sept 12, 7 AD Gregorian calendar
-const ETHIOPIC_EPOCH = 1724225.5;
-
-/**
- * Check if a Gregorian year has February 29
- */
 export function isGregorianLeapYear(year) {
   return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
 }
 
-/**
- * Check if an Ethiopian year is a leap year
- */
 export function isEthiopianLeapYear(ethYear) {
   return ethYear % 4 === 0;
 }
 
 /**
- * Convert Gregorian date (year, month, day) to Julian Day Number
+ * Day of year (1-365/366) for a Gregorian date
  */
-function gregorianToJDN(gYear, gMonth, gDay) {
-  let a = Math.floor((14 - gMonth) / 12);
-  let y = gYear + 4800 - a;
-  let m = gMonth + 12 * a - 3;
-  return gDay + Math.floor((153 * m + 2) / 5) + 365 * y + Math.floor(y / 4)
-    - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
-}
-
-/**
- * Convert Julian Day Number to Gregorian date
- */
-function jdnToGregorian(jdn) {
-  let a = jdn + 32044;
-  let b = Math.floor((4 * a + 3) / 146097);
-  let c = a - Math.floor((146097 * b) / 4);
-  let d = Math.floor((4 * c + 3) / 1461);
-  let e = c - Math.floor((1461 * d) / 4);
-  let m = Math.floor((5 * e + 2) / 153);
-
-  let day = e - Math.floor((153 * m + 2) / 5) + 1;
-  let month = m + 3 - 12 * Math.floor(m / 10);
-  let year = 100 * b + d - 4800 + Math.floor(m / 10);
-
-  return { year, month, day };
+function gregorianDayOfYear(year, month, day) {
+  const monthDays = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (isGregorianLeapYear(year)) monthDays[2] = 29;
+  let doy = day;
+  for (let m = 1; m < month; m++) doy += monthDays[m];
+  return doy;
 }
 
 /**
  * Convert Ethiopian date to Gregorian ISO date string (YYYY-MM-DD)
  */
 export function ethiopianToGregorian(ethYear, ethMonth, ethDay) {
-  // Calculate days from Ethiopian epoch
-  let jdn = ETHIOPIC_EPOCH;
+  // Ethiopian New Year = Sep 11 Gregorian (or Sep 12 before Gregorian leap year)
+  const gregYear = ethYear + 7;
+  const newYearDay = isGregorianLeapYear(gregYear) ? 12 : 11;
 
-  // Full years
-  for (let y = 1; y < ethYear; y++) {
-    jdn += isEthiopianLeapYear(y) ? 366 : 365;
-  }
-
-  // Months in current year
+  // Calculate Ethiopian day of year (1-based)
+  let ethDoy = ethDay;
   for (let m = 1; m < ethMonth; m++) {
     if (m === 13) {
-      jdn += isEthiopianLeapYear(ethYear) ? 6 : 5;
+      ethDoy += isEthiopianLeapYear(ethYear) ? 6 : 5;
     } else {
-      jdn += 30;
+      ethDoy += 30;
     }
   }
 
-  // Days
-  jdn += ethDay - 1;
+  // Ethiopian day 1 = Sep 11 or 12 of gregYear
+  // Calculate from that baseline
+  let gMonth = 9;
+  let gDay = newYearDay;
+  let remaining = ethDoy - 1; // days after New Year
 
-  const g = jdnToGregorian(jdn);
+  // Days remaining in September
+  const daysInSep = 30 - newYearDay + 1;
+  if (remaining < daysInSep) {
+    gDay += remaining;
+    return formatGregorian(gregYear, gMonth, gDay);
+  }
+  remaining -= daysInSep;
+  gMonth = 10;
+
+  // Walk through months
+  const monthDays = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  const targetYear = remaining > (isGregorianLeapYear(gregYear + 1) ? 92 : 91) ? gregYear + 1 : gregYear;
+
+  // Actually, let's iterate month by month
+  let yr = gregYear;
+  let mo = 10;
+  let dy = 1;
+
+  while (remaining > 0) {
+    const md = monthDays[mo];
+    const daysInThisMonth = (mo === 2 && isGregorianLeapYear(yr)) ? 29 : md;
+    if (remaining < daysInThisMonth) {
+      dy = 1 + remaining;
+      remaining = 0;
+    } else {
+      remaining -= daysInThisMonth;
+      mo++;
+      if (mo > 12) {
+        mo = 1;
+        yr++;
+      }
+    }
+  }
+
+  return formatGregorian(yr, mo, dy);
+}
+
+function formatGregorian(year, month, day) {
   const pad = (n) => String(n).padStart(2, '0');
-  return `${g.year}-${pad(g.month)}-${pad(g.day)}`;
+  return `${year}-${pad(month)}-${pad(day)}`;
 }
 
 /**
@@ -117,48 +109,28 @@ export function ethiopianToGregorian(ethYear, ethMonth, ethDay) {
  */
 export function gregorianToEthiopian(dateStr) {
   const [gYear, gMonth, gDay] = dateStr.split('-').map(Number);
-  const targetJDN = gregorianToJDN(gYear, gMonth, gDay);
 
-  // Ethiopian new year offset: 7 years behind before New Year, 8 years after
-  // Ethiopian year runs Meskerem 1 (Sep 11/12) to Pagume 5/6
-  let ethYear = gYear - 7;
-  // Adjust: before Ethiopian New Year, subtract another year
-  const ethNewYearJDN = gregorianToJDN(gYear, 9, isGregorianLeapYear(gYear - 1) ? 12 : 11);
-  if (targetJDN < ethNewYearJDN) {
-    ethYear--;
-  }
+  // Ethiopian New Year: Sep 11 (or Sep 12 before Gregorian leap year)
+  const newYearDay = isGregorianLeapYear(gYear) ? 12 : 11;
 
-  // Calculate days since Ethiopian New Year
-  let daysSince = targetJDN - gregorianToJDN(
-    gYear,
-    isGregorianLeapYear(gYear - 1) ? 9 : 9,
-    isGregorianLeapYear(gYear - 1) ? 12 : 11
-  );
-  // Recalculate ethYear based on JJDN
-  let ethEpochYear = gYear - 8;
-  const ethNewYearJDN2 = gregorianToJDN(ethEpochYear + 1, 9, isGregorianLeapYear(ethEpochYear) ? 12 : 11);
-  if (targetJDN >= ethNewYearJDN2) {
-    ethYear = ethEpochYear + 1;
+  let ethYear, daysFromNewYear;
+
+  if (gMonth > 9 || (gMonth === 9 && gDay >= newYearDay)) {
+    // On or after Ethiopian New Year
+    ethYear = gYear - 7;
+    // Days from Sep newYearDay to current date
+    daysFromNewYear = dayDiff(gYear, 9, newYearDay, gYear, gMonth, gDay);
   } else {
-    ethYear = ethEpochYear;
+    // Before Ethiopian New Year → still in previous Ethiopian year
+    ethYear = gYear - 8;
+    const prevNewYearDay = isGregorianLeapYear(gYear - 1) ? 12 : 11;
+    daysFromNewYear = dayDiff(gYear - 1, 9, prevNewYearDay, gYear, gMonth, gDay);
   }
 
-  // Walk from Ethiopian epoch
-  let remainingJDN = targetJDN;
-  let y = 1;
-  while (y < ethYear) {
-    remainingJDN -= isEthiopianLeapYear(y) ? 366 : 365;
-    y++;
-  }
-  // Now remainingJDN is days since start of year
-  // but we need from New Year. Let's recalculate properly.
-
-  // Alternative: direct calculation from ethNewYearJDN2
-  const ethNewYearFinal = gregorianToJDN(ethYear + 7, 9, isGregorianLeapYear(ethYear + 6) ? 12 : 11);
-  let dayInYear = targetJDN - ethNewYearFinal + 1;
-
-  // Walk through months
+  // Now convert daysFromNewYear to Ethiopian month and day
+  let remaining = daysFromNewYear;
   let month = 1;
+
   while (month <= 13) {
     let daysInMonth;
     if (month === 13) {
@@ -166,17 +138,39 @@ export function gregorianToEthiopian(dateStr) {
     } else {
       daysInMonth = 30;
     }
-    if (dayInYear <= daysInMonth) break;
-    dayInYear -= daysInMonth;
+    if (remaining < daysInMonth) break;
+    remaining -= daysInMonth;
     month++;
   }
 
-  return { year: ethYear, month, day: dayInYear };
+  // Ethiopian day is 1-based
+  const day = remaining + 1;
+
+  return { year: ethYear, month, day };
 }
 
 /**
- * Validate Ethiopian date
+ * Count days between two Gregorian dates (inclusive of start, exclusive of end? No — just the difference)
+ * Returns number of days from (y1,m1,d1) to (y2,m2,d2), where d2 is after or equal to d1.
+ * Result: 0 if same day, positive if d2 is after d1.
  */
+function dayDiff(y1, m1, d1, y2, m2, d2) {
+  const doy1 = gregorianDayOfYear(y1, m1, d1);
+  const doy2 = gregorianDayOfYear(y2, m2, d2);
+
+  if (y1 === y2) return doy2 - doy1;
+
+  // Count days from y1,m1,d1 to end of y1, plus full years, plus days in y2
+  const daysInY1 = isGregorianLeapYear(y1) ? 366 : 365;
+  let diff = daysInY1 - doy1 + doy2;
+
+  for (let y = y1 + 1; y < y2; y++) {
+    diff += isGregorianLeapYear(y) ? 366 : 365;
+  }
+
+  return diff;
+}
+
 export function isValidEthiopianDate(year, month, day) {
   if (month < 1 || month > 13) return false;
   if (month === 13) {
@@ -188,9 +182,6 @@ export function isValidEthiopianDate(year, month, day) {
   return true;
 }
 
-/**
- * Format Ethiopian date for display
- */
 export function formatEthiopianDate(year, month, day, format = 'full') {
   if (format === 'short') {
     return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
@@ -198,55 +189,10 @@ export function formatEthiopianDate(year, month, day, format = 'full') {
   return `${ETHIOPIAN_MONTHS[month - 1]} ${day}, ${year}`;
 }
 
-/**
- * Parse Ethiopian date string in MM/DD/YYYY or month-name format
- */
-export function parseEthiopianDate(str) {
-  // Try MM/DD/YYYY
-  const slashParts = str.split('/');
-  if (slashParts.length === 3) {
-    const m = parseInt(slashParts[0]);
-    const d = parseInt(slashParts[1]);
-    const y = parseInt(slashParts[2]);
-    if (!isNaN(m) && !isNaN(d) && !isNaN(y)) {
-      if (isValidEthiopianDate(y, m, d)) {
-        return { year: y, month: m, day: d };
-      }
-    }
-  }
-  // Try "Month day, year"
-  const match = str.match(/^(.+?)\s+(\d{1,2}),?\s*(\d{4})$/);
-  if (match) {
-    const monthName = match[1].trim().toLowerCase();
-    const day = parseInt(match[2]);
-    const year = parseInt(match[3]);
-    const monthIdx = ETHIOPIAN_MONTHS.findIndex(m => m.toLowerCase() === monthName);
-    if (monthIdx >= 0 && isValidEthiopianDate(year, monthIdx + 1, day)) {
-      return { year, month: monthIdx + 1, day };
-    }
-  }
-  return null;
-}
-
-/**
- * Get month names array (with or without numbers)
- */
 export function getEthiopianMonthNames(numbered = false) {
-  return numbered ? [...ETHIOPIAN_MONTHS_NUMBERED] : [...ETHIOPIAN_MONTHS];
+  return [...ETHIOPIAN_MONTHS];
 }
 
-/**
- * Get Ethiopian year from Gregorian date (YYYY-MM-DD)
- */
-export function getEthiopianYear(dateStr) {
-  const eth = gregorianToEthiopian(dateStr);
-  return eth.year;
-}
-
-/**
- * Convert an Ethiopian date string (YYYY-MM-DD format using Ethiopian year) to Gregorian ISO
- * Input: "2017-01-15" (Ethiopian year 2017, month 1, day 15)
- */
 export function ethiopianDateStrToGregorian(ethDateStr) {
   const parts = ethDateStr.split('-');
   if (parts.length !== 3) return null;
@@ -257,9 +203,6 @@ export function ethiopianDateStrToGregorian(ethDateStr) {
   return ethiopianToGregorian(year, month, day);
 }
 
-/**
- * Convert ISO Gregorian date to Ethiopian date string
- */
 export function gregorianToEthiopianDateStr(isoDate) {
   const eth = gregorianToEthiopian(isoDate);
   const pad = (n) => String(n).padStart(2, '0');

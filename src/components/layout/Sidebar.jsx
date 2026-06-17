@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 
 export default function Sidebar({ open, onClose }) {
   const location = useLocation();
-  const { churchRole, permissions, roleLabel, accessScope, userBranchId, user } = useCurrentUser();
+  const { churchRole, canAccessPage, roleLabel, accessScope, userBranchId, user } = useCurrentUser();
 
   const menuSections = [
     { label: 'Financial', items: [
@@ -37,14 +37,14 @@ export default function Sidebar({ open, onClose }) {
     ]},
   ];
 
-  const canView = (page) => {
-    if (churchRole === 'church_admin') return true;
-    return permissions.pages?.[page] === true;
+  const canView = (item) => {
+    if (!churchRole) return false;
+    return canAccessPage(item.path);
   };
 
   const filtered = menuSections.map(s => ({
     ...s,
-    items: s.items.filter(i => canView(i.page)),
+    items: s.items.filter(i => canView(i)),
   })).filter(s => s.items.length > 0);
 
   const sidebarContent = (
