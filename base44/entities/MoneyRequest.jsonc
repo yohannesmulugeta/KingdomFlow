@@ -1,0 +1,76 @@
+{
+  "name": "MoneyRequest",
+  "type": "object",
+  "properties": {
+    "request_number": {
+      "type": "string",
+      "description": "Auto-generated: REQ-YYYY-00001"
+    },
+    "requested_by_id": {
+      "type": "string"
+    },
+    "requested_by_name": {
+      "type": "string"
+    },
+    "department_id": {
+      "type": "string"
+    },
+    "branch_id": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "number",
+      "minimum": 0.01
+    },
+    "purpose": {
+      "type": "string"
+    },
+    "fund_id": {
+      "type": "string"
+    },
+    "category_id": {
+      "type": "string"
+    },
+    "category_name": {
+      "type": "string"
+    },
+    "vendor_payee": {
+      "type": "string"
+    },
+    "date_needed": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "submitted",
+        "approved",
+        "rejected",
+        "fulfilled",
+        "cancelled"
+      ],
+      "default": "draft"
+    },
+    "approved_by_id": {
+      "type": "string"
+    },
+    "approved_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "rejection_reason": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "requested_by_id",
+    "amount",
+    "purpose",
+    "branch_id"
+  ]
+}

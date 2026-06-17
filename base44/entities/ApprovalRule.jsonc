@@ -21,14 +21,19 @@
     "max_amount": {
       "type": "number"
     },
+    "approval_order": {
+      "type": "integer",
+      "description": "1=first stage, 2=second, etc."
+    },
     "required_role": {
       "type": "string",
       "enum": [
-        "branch_manager",
-        "finance_officer",
+        "department_leader",
+        "treasurer",
+        "pastor",
         "church_admin"
       ],
-      "default": "branch_manager"
+      "default": "department_leader"
     },
     "branch_id": {
       "type": "string",
@@ -41,6 +46,7 @@
   },
   "required": [
     "name",
-    "required_role"
+    "required_role",
+    "approval_order"
   ]
 }

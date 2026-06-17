@@ -8,7 +8,6 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Login from '@/pages/Login';
-import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import AppLayout from '@/components/layout/AppLayout';
@@ -24,6 +23,10 @@ import Users from '@/pages/Users';
 import ChurchProfile from '@/pages/ChurchProfile';
 import ApprovalRules from '@/pages/ApprovalRules';
 import Reports from '@/pages/Reports';
+import Budgets from '@/pages/Budgets';
+import MyRequests from '@/pages/MyRequests';
+import MemberSummary from '@/pages/MemberSummary';
+import AuditLogs from '@/pages/AuditLogs';
 import Settings from '@/pages/Settings';
 
 const AuthenticatedApp = () => {
@@ -49,7 +52,6 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
@@ -58,14 +60,18 @@ const AuthenticatedApp = () => {
           <Route path="/income" element={<Income />} />
           <Route path="/expenses" element={<Expenses />} />
           <Route path="/approvals" element={<Approvals />} />
+          <Route path="/my-requests" element={<MyRequests />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/member-summary" element={<MemberSummary />} />
           <Route path="/church-profile" element={<ChurchProfile />} />
           <Route path="/branches" element={<Branches />} />
           <Route path="/departments" element={<Departments />} />
           <Route path="/funds" element={<Funds />} />
           <Route path="/categories" element={<Categories />} />
+          <Route path="/budgets" element={<Budgets />} />
           <Route path="/users" element={<Users />} />
           <Route path="/approval-rules" element={<ApprovalRules />} />
+          <Route path="/audit-logs" element={<AuditLogs />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Route>

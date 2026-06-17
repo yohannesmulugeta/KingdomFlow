@@ -11,6 +11,10 @@
     "description": {
       "type": "string"
     },
+    "opening_balance": {
+      "type": "number",
+      "default": 0
+    },
     "target_amount": {
       "type": "number",
       "default": 0

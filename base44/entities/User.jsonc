@@ -5,13 +5,13 @@
     "role": {
       "type": "string",
       "enum": [
-        "admin",
-        "branch_manager",
-        "finance_officer",
-        "accountant",
-        "viewer"
+        "church_admin",
+        "pastor",
+        "treasurer",
+        "department_leader",
+        "auditor"
       ],
-      "default": "viewer"
+      "default": "department_leader"
     },
     "branch_id": {
       "type": "string",

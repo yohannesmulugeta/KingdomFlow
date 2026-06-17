@@ -1,0 +1,45 @@
+{
+  "name": "ApprovalHistory",
+  "type": "object",
+  "properties": {
+    "transaction_id": {
+      "type": "string"
+    },
+    "money_request_id": {
+      "type": "string"
+    },
+    "stage": {
+      "type": "string",
+      "enum": [
+        "department_leader",
+        "treasurer",
+        "pastor",
+        "church_admin"
+      ]
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "approved",
+        "rejected"
+      ]
+    },
+    "approved_by_id": {
+      "type": "string"
+    },
+    "approved_by_name": {
+      "type": "string"
+    },
+    "approved_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "comment": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "action",
+    "approved_by_id"
+  ]
+}

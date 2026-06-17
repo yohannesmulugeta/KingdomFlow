@@ -1,0 +1,37 @@
+{
+  "name": "AuditLog",
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "description": "e.g. transaction_created, transaction_approved, user_invited, etc."
+    },
+    "entity_name": {
+      "type": "string"
+    },
+    "entity_id": {
+      "type": "string"
+    },
+    "performed_by_id": {
+      "type": "string"
+    },
+    "performed_by_name": {
+      "type": "string"
+    },
+    "details": {
+      "type": "string"
+    },
+    "branch_id": {
+      "type": "string"
+    },
+    "metadata_json": {
+      "type": "string",
+      "description": "Additional structured data as JSON string"
+    }
+  },
+  "required": [
+    "action",
+    "entity_name",
+    "performed_by_id"
+  ]
+}

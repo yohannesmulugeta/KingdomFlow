@@ -1,0 +1,57 @@
+{
+  "name": "Budget",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "year": {
+      "type": "integer"
+    },
+    "branch_id": {
+      "type": "string"
+    },
+    "department_id": {
+      "type": "string"
+    },
+    "fund_id": {
+      "type": "string"
+    },
+    "category_id": {
+      "type": "string"
+    },
+    "category_name": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "income",
+        "expense"
+      ]
+    },
+    "planned_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "committed_amount": {
+      "type": "number",
+      "default": 0,
+      "description": "Approved but unpaid"
+    },
+    "spent_amount": {
+      "type": "number",
+      "default": 0,
+      "description": "Actually paid/completed"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "name",
+    "year",
+    "planned_amount"
+  ]
+}

@@ -2,21 +2,24 @@ import React from 'react';
 import { Menu, LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ROLE_LABELS } from '@/hooks/useCurrentUser';
 
 export default function TopBar({ onMenuClick, currentUser }) {
   const handleLogout = () => {
     base44.auth.logout('/login');
   };
 
+  const roleLabel = ROLE_LABELS[currentUser?.role] || currentUser?.role || 'User';
+
   return (
     <header className="h-14 border-b border-border bg-card flex items-center justify-between px-4 flex-shrink-0">
       <Button variant="ghost" size="icon" className="lg:hidden" onClick={onMenuClick}>
         <Menu className="w-5 h-5" />
       </Button>
-      <div className="hidden lg:block" />
+      <div className="hidden lg:block text-xs text-muted-foreground font-medium">
+        KingdomFlow
+      </div>
 
       <div className="flex items-center gap-3">
         <DropdownMenu>
@@ -32,7 +35,7 @@ export default function TopBar({ onMenuClick, currentUser }) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem className="text-xs text-muted-foreground">{currentUser?.email}</DropdownMenuItem>
-            <DropdownMenuItem className="text-xs text-muted-foreground capitalize">Role: {currentUser?.role}</DropdownMenuItem>
+            <DropdownMenuItem className="text-xs text-muted-foreground">{roleLabel}</DropdownMenuItem>
             <DropdownMenuItem onClick={handleLogout} className="text-destructive">
               <LogOut className="w-4 h-4 mr-2" /> Logout
             </DropdownMenuItem>

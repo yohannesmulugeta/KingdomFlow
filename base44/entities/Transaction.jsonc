@@ -2,6 +2,10 @@
   "name": "Transaction",
   "type": "object",
   "properties": {
+    "transaction_number": {
+      "type": "string",
+      "description": "Auto-generated: INC-YYYY-00001, EXP-YYYY-00001"
+    },
     "type": {
       "type": "string",
       "enum": [
@@ -10,16 +14,18 @@
       ]
     },
     "amount": {
-      "type": "number"
+      "type": "number",
+      "minimum": 0.01
     },
     "date": {
       "type": "string",
       "format": "date"
     },
-    "description": {
-      "type": "string"
+    "ethiopian_date": {
+      "type": "string",
+      "description": "Ethiopian calendar date"
     },
-    "reference_number": {
+    "description": {
       "type": "string"
     },
     "branch_id": {
@@ -32,8 +38,7 @@
       "type": "string"
     },
     "category_id": {
-      "type": "string",
-      "description": "Income or Expense category ID"
+      "type": "string"
     },
     "category_name": {
       "type": "string"
@@ -42,10 +47,10 @@
       "type": "string",
       "enum": [
         "cash",
-        "check",
         "bank_transfer",
+        "telebirr",
+        "check",
         "mobile_money",
-        "online",
         "other"
       ],
       "default": "cash"
@@ -55,9 +60,41 @@
       "enum": [
         "pending",
         "approved",
-        "rejected"
+        "rejected",
+        "voided",
+        "cancelled",
+        "archived"
       ],
       "default": "pending"
+    },
+    "donor_name": {
+      "type": "string",
+      "description": "Donor name for income"
+    },
+    "is_anonymous_donor": {
+      "type": "boolean",
+      "default": false
+    },
+    "vendor_payee": {
+      "type": "string",
+      "description": "Vendor/payee for expenses"
+    },
+    "receipt_number": {
+      "type": "string"
+    },
+    "receipt_url": {
+      "type": "string"
+    },
+    "receipt_needed": {
+      "type": "boolean",
+      "default": false
+    },
+    "receipt_received": {
+      "type": "boolean",
+      "default": false
+    },
+    "payment_proof_url": {
+      "type": "string"
     },
     "approved_by_id": {
       "type": "string"
@@ -66,13 +103,31 @@
       "type": "string",
       "format": "date-time"
     },
+    "approval_stage": {
+      "type": "string",
+      "enum": [
+        "none",
+        "department_leader",
+        "treasurer",
+        "pastor",
+        "church_admin"
+      ],
+      "default": "none"
+    },
     "rejection_reason": {
       "type": "string"
     },
-    "receipt_url": {
+    "notes": {
       "type": "string"
     },
-    "notes": {
+    "voided_by_id": {
+      "type": "string"
+    },
+    "voided_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "void_reason": {
       "type": "string"
     }
   },
