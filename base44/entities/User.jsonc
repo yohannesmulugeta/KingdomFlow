@@ -11,7 +11,7 @@
         "department_leader",
         "auditor"
       ],
-      "default": "department_leader"
+      "description": "KingdomFlow church role"
     },
     "branch_id": {
       "type": "string",
@@ -37,6 +37,22 @@
         "pending"
       ],
       "default": "active"
+    },
+    "must_change_password": {
+      "type": "boolean",
+      "default": false
+    },
+    "invitation_pending": {
+      "type": "boolean",
+      "default": true
+    },
+    "preferred_calendar": {
+      "type": "string",
+      "enum": [
+        "gregorian",
+        "ethiopian"
+      ],
+      "default": "gregorian"
     },
     "phone": {
       "type": "string"

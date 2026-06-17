@@ -1,42 +1,44 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
-import { useLocation } from 'react-router-dom';
-import useCurrentUser, { ROUTE_PERMISSION_MAP } from '@/hooks/useCurrentUser';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useCurrentUser } from '@/contexts/CurrentUserContext';
 import AccessDenied from '@/components/AccessDenied';
 import NoRoleConfigured from '@/components/NoRoleConfigured';
 
-export default function RoleProtectedRoute({ children }) {
+export default function RoleProtectedRoute() {
   const location = useLocation();
-  const { loading, error, churchRole, canAccessRoute, userStatus, permissions } = useCurrentUser();
+  const { loading, status, churchRole, userStatus, canAccessPage, mustChangePassword } = useCurrentUser();
 
   if (loading) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center">
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
         <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
       </div>
     );
   }
 
-  if (error === 'no_role') {
+  if (status === 'unauthorized') {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (status === 'missing_role') {
     return <NoRoleConfigured />;
   }
 
-  if (userStatus === 'suspended') {
-    return (
-      <AccessDenied
-        title="Account Suspended"
-        description="Your account has been suspended. Please contact the Church Admin."
-      />
-    );
+  if (mustChangePassword && location.pathname !== '/change-password') {
+    return <Navigate to="/change-password" replace />;
   }
 
-  if (!churchRole) {
-    return <NoRoleConfigured />;
+  if (status === 'suspended') {
+    return <AccessDenied title="Account Suspended" description="Your account has been suspended. Contact the Church Admin." />;
   }
 
-  if (!canAccessRoute(location.pathname)) {
+  if (status === 'missing_branch') {
+    return <AccessDenied title="No Branch Assigned" description="Your account needs a branch assignment. Contact the Church Admin." />;
+  }
+
+  if (!canAccessPage(location.pathname)) {
     return <AccessDenied />;
   }
 
-  return children || <Outlet />;
+  return <Outlet />;
 }
