@@ -10,8 +10,7 @@ import useCurrentUser, { ROLE_LABELS } from '@/hooks/useCurrentUser';
 
 export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) {
   const location = useLocation();
-  const { role, roleLabel } = useCurrentUser();
-  const permissions = useCurrentUser().permissions;
+  const { role, roleLabel, permissions } = useCurrentUser();
 
   const navGroups = [
     {
