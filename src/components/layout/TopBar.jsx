@@ -10,7 +10,8 @@ export default function TopBar({ onMenuClick, currentUser }) {
     base44.auth.logout('/login');
   };
 
-  const roleLabel = ROLE_LABELS[currentUser?.role] || currentUser?.role || 'User';
+  const churchRole = currentUser?.church_role;
+  const roleLabel = ROLE_LABELS[churchRole] || churchRole || 'Not configured';
 
   return (
     <header className="h-14 border-b border-border bg-card flex items-center justify-between px-4 flex-shrink-0">

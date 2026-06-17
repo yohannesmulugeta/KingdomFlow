@@ -6,6 +6,14 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const churchRole = user.church_role;
+    if (!churchRole) return Response.json({ error: 'KingdomFlow role not configured' }, { status: 403 });
+
+    // Auditor: read-only
+    if (churchRole === 'auditor') {
+      return Response.json({ error: 'Auditors have read-only access' }, { status: 403 });
+    }
+
     const body = await req.json();
     const { transaction_id, reason } = body;
 
@@ -13,10 +21,14 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Transaction ID is required' }, { status: 400 });
     }
 
+    // Only church_admin and treasurer can void
+    if (!['church_admin', 'treasurer'].includes(churchRole)) {
+      return Response.json({ error: 'Only Church Admin and Treasurer can void transactions' }, { status: 403 });
+    }
+
     const transaction = await base44.asServiceRole.entities.Transaction.get(transaction_id);
     if (!transaction) return Response.json({ error: 'Transaction not found' }, { status: 404 });
 
-    // Only pending or approved transactions can be voided (not already voided/rejected)
     if (transaction.status === 'voided') {
       return Response.json({ error: 'Transaction is already voided' }, { status: 400 });
     }
@@ -28,7 +40,6 @@ Deno.serve(async (req) => {
       void_reason: reason || ''
     });
 
-    // Audit log
     await base44.asServiceRole.entities.AuditLog.create({
       action: 'transaction_voided',
       entity_name: 'Transaction',

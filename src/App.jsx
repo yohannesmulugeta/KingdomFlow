@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import RoleProtectedRoute from '@/components/RoleProtectedRoute';
 import Login from '@/pages/Login';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
@@ -56,23 +57,25 @@ const AuthenticatedApp = () => {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route element={<AppLayout />}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/income" element={<Income />} />
-          <Route path="/expenses" element={<Expenses />} />
-          <Route path="/approvals" element={<Approvals />} />
-          <Route path="/my-requests" element={<MyRequests />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/member-summary" element={<MemberSummary />} />
-          <Route path="/church-profile" element={<ChurchProfile />} />
-          <Route path="/branches" element={<Branches />} />
-          <Route path="/departments" element={<Departments />} />
-          <Route path="/funds" element={<Funds />} />
-          <Route path="/categories" element={<Categories />} />
-          <Route path="/budgets" element={<Budgets />} />
-          <Route path="/users" element={<Users />} />
-          <Route path="/approval-rules" element={<ApprovalRules />} />
-          <Route path="/audit-logs" element={<AuditLogs />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route element={<RoleProtectedRoute />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/income" element={<Income />} />
+            <Route path="/expenses" element={<Expenses />} />
+            <Route path="/approvals" element={<Approvals />} />
+            <Route path="/my-requests" element={<MyRequests />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/member-summary" element={<MemberSummary />} />
+            <Route path="/church-profile" element={<ChurchProfile />} />
+            <Route path="/branches" element={<Branches />} />
+            <Route path="/departments" element={<Departments />} />
+            <Route path="/funds" element={<Funds />} />
+            <Route path="/categories" element={<Categories />} />
+            <Route path="/budgets" element={<Budgets />} />
+            <Route path="/users" element={<Users />} />
+            <Route path="/approval-rules" element={<ApprovalRules />} />
+            <Route path="/audit-logs" element={<AuditLogs />} />
+            <Route path="/settings" element={<Settings />} />
+          </Route>
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />

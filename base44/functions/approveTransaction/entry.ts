@@ -12,24 +12,34 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const churchRole = user.church_role;
+    if (!churchRole) return Response.json({ error: 'KingdomFlow role not configured' }, { status: 403 });
+
+    // Auditor: read-only — block all writes
+    if (churchRole === 'auditor') {
+      return Response.json({ error: 'Auditors have read-only access' }, { status: 403 });
+    }
+
+    const canApprove = ['church_admin', 'pastor', 'treasurer', 'department_leader'].includes(churchRole);
+    if (!canApprove) {
+      return Response.json({ error: 'You do not have approval privileges' }, { status: 403 });
+    }
+
     const body = await req.json();
     const { transaction_id, action, reason } = body;
 
     const transaction = await base44.asServiceRole.entities.Transaction.get(transaction_id);
     if (!transaction) return Response.json({ error: 'Transaction not found' }, { status: 404 });
 
-    // Prevent self-approval
     if (transaction.created_by_id === user.id) {
       return Response.json({ error: 'You cannot approve your own transaction' }, { status: 403 });
     }
 
-    // Get active approval rules sorted by order
     const rules = await base44.asServiceRole.entities.ApprovalRule.filter({
       is_active: true,
       transaction_type: { $in: [transaction.type, 'both'] }
     }, 'approval_order', 20);
 
-    // Filter rules that match the amount
     const applicableRules = rules.filter(r => {
       if (r.min_amount > 0 && transaction.amount < r.min_amount) return false;
       if (r.max_amount && transaction.amount > r.max_amount) return false;
@@ -37,21 +47,16 @@ Deno.serve(async (req) => {
       return true;
     }).sort((a, b) => (a.approval_order || 0) - (b.approval_order || 0));
 
-    // Check if current user's role is in the required sequence
     const currentStage = transaction.approval_stage || 'none';
-    const userRoleOrder = roleToOrder(user.role);
-    const userRole = user.role;
 
     if (action === 'approve') {
       let foundNextStage = false;
-      let nextRequiredRole = null;
       let nextStageLabel = null;
 
       for (const rule of applicableRules) {
         const ruleOrder = roleToOrder(rule.required_role);
         if (currentStage === 'none' || ruleOrder > roleToOrder(currentStage)) {
-          // Next pending stage
-          if (rule.required_role === userRole) {
+          if (rule.required_role === churchRole) {
             foundNextStage = true;
             nextStageLabel = rule.required_role;
           }
@@ -59,19 +64,17 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Also check if no rules apply at all (allow church_admin to skip)
-      if (!foundNextStage && applicableRules.length === 0 && userRole === 'church_admin') {
+      if (!foundNextStage && applicableRules.length === 0 && churchRole === 'church_admin') {
         foundNextStage = true;
         nextStageLabel = 'church_admin';
       }
 
       if (!foundNextStage) {
         return Response.json({
-          error: `Your role (${userRole}) is not the current required approver. Check the approval rules.`
+          error: `Your church role (${churchRole}) is not the current required approver.`
         }, { status: 403 });
       }
 
-      // Check if there are more stages after this one
       let isFinalStage = true;
       for (const rule of applicableRules) {
         if (roleToOrder(rule.required_role) > roleToOrder(nextStageLabel)) {
@@ -80,16 +83,13 @@ Deno.serve(async (req) => {
         }
       }
 
-      const updateData = {
-        approval_stage: isFinalStage ? nextStageLabel : nextStageLabel,
+      await base44.asServiceRole.entities.Transaction.update(transaction_id, {
+        approval_stage: nextStageLabel,
         status: isFinalStage ? 'approved' : 'pending',
         approved_by_id: user.id,
         approved_date: new Date().toISOString(),
-      };
+      });
 
-      await base44.asServiceRole.entities.Transaction.update(transaction_id, updateData);
-
-      // Approval history
       await base44.asServiceRole.entities.ApprovalHistory.create({
         transaction_id,
         stage: nextStageLabel,
@@ -100,14 +100,13 @@ Deno.serve(async (req) => {
         comment: reason || ''
       });
 
-      // Audit log
       await base44.asServiceRole.entities.AuditLog.create({
         action: 'transaction_approved',
         entity_name: 'Transaction',
         entity_id: transaction_id,
         performed_by_id: user.id,
         performed_by_name: user.full_name || user.email,
-        details: `Transaction ${transaction.transaction_number || transaction_id} approved by ${userRole}${isFinalStage ? ' (final)' : ' (stage ' + nextStageLabel + ')'}`,
+        details: `Transaction ${transaction.transaction_number || transaction_id} approved by ${churchRole}${isFinalStage ? ' (final)' : ' (stage ' + nextStageLabel + ')'}`,
         branch_id: transaction.branch_id,
         metadata_json: JSON.stringify({ is_final: isFinalStage, stage: nextStageLabel })
       });
@@ -130,7 +129,7 @@ Deno.serve(async (req) => {
 
       await base44.asServiceRole.entities.ApprovalHistory.create({
         transaction_id,
-        stage: userRole,
+        stage: churchRole,
         action: 'rejected',
         approved_by_id: user.id,
         approved_by_name: user.full_name || user.email,
@@ -144,7 +143,7 @@ Deno.serve(async (req) => {
         entity_id: transaction_id,
         performed_by_id: user.id,
         performed_by_name: user.full_name || user.email,
-        details: `Transaction ${transaction.transaction_number || transaction_id} rejected by ${userRole}: ${reason || ''}`,
+        details: `Transaction ${transaction.transaction_number || transaction_id} rejected by ${churchRole}: ${reason || ''}`,
         branch_id: transaction.branch_id,
       });
 

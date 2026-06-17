@@ -9,9 +9,14 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { fund_id } = body;
 
-    // Get all transactions for the fund
+    // Branch filter: assigned_branch users only see their branch
+    let branchFilter = {};
+    if (user.access_scope === 'assigned_branch' && user.branch_id) {
+      branchFilter = { branch_id: user.branch_id };
+    }
+
     const transactions = await base44.asServiceRole.entities.Transaction.filter(
-      { fund_id, status: { $in: ['approved', 'pending'] } },
+      { fund_id, status: { $in: ['approved', 'pending'] }, ...branchFilter },
       'date',
       500
     );

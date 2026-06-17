@@ -6,6 +6,14 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const churchRole = user.church_role;
+    if (!churchRole) return Response.json({ error: 'KingdomFlow role not configured' }, { status: 403 });
+
+    // Auditor: read-only
+    if (churchRole === 'auditor') {
+      return Response.json({ error: 'Auditors have read-only access' }, { status: 403 });
+    }
+
     const body = await req.json();
 
     const amount = parseFloat(body.amount);
@@ -45,7 +53,7 @@ Deno.serve(async (req) => {
       entity_id: created.id,
       performed_by_id: user.id,
       performed_by_name: user.full_name || user.email,
-      details: `Money request ${requestNumber} for ${amount} created: ${body.purpose}`,
+      details: `Money request ${requestNumber} for ${amount} created by ${churchRole}: ${body.purpose}`,
       branch_id: body.branch_id,
     });
 

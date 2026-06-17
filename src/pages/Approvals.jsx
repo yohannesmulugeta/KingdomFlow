@@ -12,7 +12,7 @@ import useCurrentUser from '@/hooks/useCurrentUser';
 import { toast } from '@/components/ui/use-toast';
 
 export default function Approvals() {
-  const { userId, role, can } = useCurrentUser();
+  const { userId, churchRole, can, userBranchId, isBranchSpecific } = useCurrentUser();
   const canApprove = can('canApprove');
   const [transactions, setTransactions] = useState([]);
   const [approvalHistory, setApprovalHistory] = useState({});
@@ -23,11 +23,12 @@ export default function Approvals() {
 
   const load = () => {
     Promise.all([
-      base44.entities.Transaction.filter({ status: 'pending' }, '-created_date', 100),
+      base44.entities.Transaction.filter({ status: 'pending' }, '-created_date', 200),
       base44.entities.ApprovalRule.filter({ is_active: true }, 'approval_order', 20),
       base44.entities.ApprovalHistory.list('-created_date', 100),
     ]).then(([t, r, ah]) => {
-      setTransactions(t);
+      const filtered = isBranchSpecific ? t.filter(x => !x.branch_id || x.branch_id === userBranchId) : t;
+      setTransactions(filtered);
       setRules(r);
       const hist = {};
       ah.forEach(h => { if (h.transaction_id) { if (!hist[h.transaction_id]) hist[h.transaction_id] = []; hist[h.transaction_id].push(h); } });
@@ -49,7 +50,7 @@ export default function Approvals() {
   const canCurrentUserApprove = (transaction) => {
     if (transaction.created_by_id === userId) return false;
     const applicableRules = getApplicableRules(transaction);
-    if (applicableRules.length === 0) return role === 'church_admin';
+    if (applicableRules.length === 0) return churchRole === 'church_admin';
     // Check if current role is the next required stage
     const history = approvalHistory[transaction.id] || [];
     const lastStage = transaction.approval_stage || 'none';
@@ -57,7 +58,7 @@ export default function Approvals() {
       const ruleOrder = rule.approval_order || 0;
       const lastOrder = { department_leader: 1, treasurer: 2, pastor: 3, church_admin: 4 }[lastStage] || 0;
       if (ruleOrder > lastOrder) {
-        return rule.required_role === role;
+        return rule.required_role === churchRole;
       }
     }
     return false;

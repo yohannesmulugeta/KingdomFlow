@@ -1,25 +1,56 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
+function checkPermission(churchRole, action) {
+  const permissions = {
+    church_admin: { canRecord: true, canApprove: true, canVoid: true, canManageUsers: true },
+    pastor: { canRecord: false, canApprove: true, canVoid: false, canManageUsers: false },
+    treasurer: { canRecord: true, canApprove: true, canVoid: false, canManageUsers: false },
+    department_leader: { canRecord: false, canApprove: true, canVoid: false, canManageUsers: false },
+    auditor: { canRecord: false, canApprove: false, canVoid: false, canManageUsers: false },
+  };
+  const rolePerms = permissions[churchRole] || { canRecord: false, canApprove: false, canVoid: false };
+  return !!rolePerms[action];
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const churchRole = user.church_role;
+    if (!churchRole) return Response.json({ error: 'KingdomFlow role not configured' }, { status: 403 });
+
+    // Auditor: read-only — block all writes
+    if (churchRole === 'auditor') {
+      return Response.json({ error: 'Auditors have read-only access' }, { status: 403 });
+    }
+
+    if (!checkPermission(churchRole, 'canRecord')) {
+      return Response.json({ error: 'You do not have permission to create transactions' }, { status: 403 });
+    }
+
     const body = await req.json();
 
-    // Validate amount
     const amount = parseFloat(body.amount);
     if (!amount || amount <= 0) {
       return Response.json({ error: 'Amount must be greater than zero' }, { status: 400 });
     }
 
-    // Validate required fields
     if (!body.type || !body.date || !body.branch_id) {
       return Response.json({ error: 'Type, date, and branch are required' }, { status: 400 });
     }
 
-    // Generate transaction number
+    // Department Leader: can only create money requests, not direct transactions
+    if (churchRole === 'department_leader') {
+      return Response.json({ error: 'Department Leaders submit money requests instead of direct transactions' }, { status: 403 });
+    }
+
+    // Branch check: assigned_branch users can only record for their branch
+    if (user.access_scope === 'assigned_branch' && user.branch_id && body.branch_id !== user.branch_id) {
+      return Response.json({ error: 'You can only record transactions for your assigned branch' }, { status: 403 });
+    }
+
     const year = new Date().getFullYear();
     const prefix = body.type === 'income' ? 'INC' : 'EXP';
     const existing = await base44.asServiceRole.entities.Transaction.filter({
@@ -44,7 +75,6 @@ Deno.serve(async (req) => {
 
     const created = await base44.asServiceRole.entities.Transaction.create(transactionData);
 
-    // Audit log
     await base44.asServiceRole.entities.AuditLog.create({
       action: 'transaction_created',
       entity_name: 'Transaction',
