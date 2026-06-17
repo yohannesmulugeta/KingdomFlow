@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Users, TrendingUp, TrendingDown } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
-import useCurrentUser from '@/hooks/useCurrentUser';
+import { useCurrentUser } from '@/contexts/CurrentUserContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function MemberSummary() {

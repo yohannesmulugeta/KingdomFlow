@@ -9,12 +9,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Wallet, Plus, Pencil, Archive } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
-import useCurrentUser from '@/hooks/useCurrentUser';
+import { useCurrentUser } from '@/contexts/CurrentUserContext';
 import { toast } from '@/components/ui/use-toast';
 
 export default function Funds() {
   const { can } = useCurrentUser();
-  const canManage = can('canRecordDirect');
+  const canManage = can('can_manage_funds');
   const [funds, setFunds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);

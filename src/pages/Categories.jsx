@@ -10,10 +10,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tag, Plus, Pencil, Trash2, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
-import useCurrentUser from '@/hooks/useCurrentUser';
+import { useCurrentUser } from '@/contexts/CurrentUserContext';
 
 export default function Categories() {
-  const { isAdmin } = useCurrentUser();
+  const { churchRole } = useCurrentUser();
+  const isAdmin = churchRole === 'church_admin';
   const [incomeCategories, setIncomeCategories] = useState([]);
   const [expenseCategories, setExpenseCategories] = useState([]);
   const [loading, setLoading] = useState(true);

@@ -8,9 +8,12 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import RoleProtectedRoute from '@/components/RoleProtectedRoute';
+import { CurrentUserProvider } from '@/contexts/CurrentUserContext';
 import Login from '@/pages/Login';
+import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
+import ChangePassword from '@/pages/ChangePassword';
 import AppLayout from '@/components/layout/AppLayout';
 import Dashboard from '@/pages/Dashboard';
 import Branches from '@/pages/Branches';
@@ -26,6 +29,7 @@ import ApprovalRules from '@/pages/ApprovalRules';
 import Reports from '@/pages/Reports';
 import Budgets from '@/pages/Budgets';
 import MyRequests from '@/pages/MyRequests';
+import RequestMoney from '@/pages/RequestMoney';
 import MemberSummary from '@/pages/MemberSummary';
 import AuditLogs from '@/pages/AuditLogs';
 import Settings from '@/pages/Settings';
@@ -53,16 +57,19 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
-        <Route element={<AppLayout />}>
+        <Route element={<CurrentUserProvider><AppLayout /></CurrentUserProvider>}>
           <Route element={<RoleProtectedRoute />}>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/income" element={<Income />} />
             <Route path="/expenses" element={<Expenses />} />
             <Route path="/approvals" element={<Approvals />} />
             <Route path="/my-requests" element={<MyRequests />} />
+            <Route path="/request-money" element={<RequestMoney />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/member-summary" element={<MemberSummary />} />
             <Route path="/church-profile" element={<ChurchProfile />} />

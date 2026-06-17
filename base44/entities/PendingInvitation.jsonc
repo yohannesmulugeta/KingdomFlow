@@ -1,0 +1,64 @@
+{
+  "name": "PendingInvitation",
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "church_role": {
+      "type": "string",
+      "enum": [
+        "church_admin",
+        "pastor",
+        "treasurer",
+        "department_leader",
+        "auditor"
+      ],
+      "default": "department_leader"
+    },
+    "access_scope": {
+      "type": "string",
+      "enum": [
+        "all_branches",
+        "assigned_branch"
+      ],
+      "default": "assigned_branch"
+    },
+    "branch_id": {
+      "type": "string"
+    },
+    "department_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "expired",
+        "cancelled"
+      ],
+      "default": "pending"
+    },
+    "invited_by_id": {
+      "type": "string"
+    },
+    "invited_by_name": {
+      "type": "string"
+    },
+    "invited_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "accepted_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "email",
+    "church_role",
+    "invited_by_id"
+  ]
+}

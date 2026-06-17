@@ -1,28 +1,31 @@
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import Sidebar from './Sidebar';
-import TopBar from './TopBar';
-import useCurrentUser from '@/hooks/useCurrentUser';
+import Sidebar from '@/components/layout/Sidebar';
+import TopBar from '@/components/layout/TopBar';
+import { useCurrentUser } from '@/contexts/CurrentUserContext';
 
 export default function AppLayout() {
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const { currentUser, loading } = useCurrentUser();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { loading, user, status } = useCurrentUser();
 
   if (loading) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
+        <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
       </div>
     );
   }
 
+  if (status !== 'authenticated' && status !== 'password_change_required') {
+    return <Outlet />;
+  }
+
   return (
-    <div className="h-screen flex overflow-hidden">
-      <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <TopBar onMenuClick={() => setMobileOpen(true)} currentUser={currentUser} />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+    <div className="flex h-screen overflow-hidden bg-background">
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="flex flex-col flex-1 overflow-hidden lg:pl-64">
+        <TopBar onMenuClick={() => setSidebarOpen(true)} currentUser={user} />
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <Outlet />
         </main>
       </div>

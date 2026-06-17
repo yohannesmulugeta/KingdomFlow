@@ -23,7 +23,7 @@
     },
     "ethiopian_date": {
       "type": "string",
-      "description": "Ethiopian calendar date"
+      "description": "Ethiopian calendar date for display"
     },
     "description": {
       "type": "string"
@@ -58,26 +58,27 @@
     "status": {
       "type": "string",
       "enum": [
+        "draft",
         "pending",
         "approved",
         "rejected",
+        "paid",
+        "receipt_needed",
+        "completed",
         "voided",
-        "cancelled",
         "archived"
       ],
-      "default": "pending"
+      "default": "draft"
     },
     "donor_name": {
-      "type": "string",
-      "description": "Donor name for income"
+      "type": "string"
     },
     "is_anonymous_donor": {
       "type": "boolean",
       "default": false
     },
     "vendor_payee": {
-      "type": "string",
-      "description": "Vendor/payee for expenses"
+      "type": "string"
     },
     "receipt_number": {
       "type": "string"
@@ -129,6 +130,10 @@
     },
     "void_reason": {
       "type": "string"
+    },
+    "money_request_id": {
+      "type": "string",
+      "description": "Linked money request if converted"
     }
   },
   "required": [

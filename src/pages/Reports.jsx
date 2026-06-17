@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PieChart as PieChartIcon } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
-import useCurrentUser from '@/hooks/useCurrentUser';
+import { useCurrentUser } from '@/contexts/CurrentUserContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 const COLORS = ['hsl(221,83%,53%)', 'hsl(142,71%,45%)', 'hsl(38,92%,50%)', 'hsl(262,83%,58%)', 'hsl(0,84%,60%)', 'hsl(180,60%,45%)'];

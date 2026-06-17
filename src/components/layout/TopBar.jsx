@@ -3,7 +3,7 @@ import { Menu, LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { ROLE_LABELS } from '@/hooks/useCurrentUser';
+import { CHURCH_ROLES } from '@/contexts/CurrentUserContext';
 
 export default function TopBar({ onMenuClick, currentUser }) {
   const handleLogout = () => {
@@ -11,7 +11,7 @@ export default function TopBar({ onMenuClick, currentUser }) {
   };
 
   const churchRole = currentUser?.church_role;
-  const roleLabel = ROLE_LABELS[churchRole] || churchRole || 'Not configured';
+  const roleLabel = CHURCH_ROLES[churchRole] || 'Not configured';
 
   return (
     <header className="h-14 border-b border-border bg-card flex items-center justify-between px-4 flex-shrink-0">

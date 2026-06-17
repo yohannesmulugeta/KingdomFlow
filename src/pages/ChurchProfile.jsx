@@ -8,15 +8,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Church, Save } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
-import useCurrentUser from '@/hooks/useCurrentUser';
+import { useCurrentUser } from '@/contexts/CurrentUserContext';
 import { toast } from '@/components/ui/use-toast';
 
 const CURRENCIES = ['ETB', 'USD', 'EUR', 'GBP'];
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 export default function ChurchProfile() {
-  const { can } = useCurrentUser();
-  const canEdit = can('churchProfile');
+  const { can, churchRole } = useCurrentUser();
+  const canEdit = churchRole === 'church_admin';
   const [profile, setProfile] = useState(null);
   const [form, setForm] = useState({});
   const [loading, setLoading] = useState(true);

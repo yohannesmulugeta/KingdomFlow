@@ -9,14 +9,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { DollarSign, Plus, Pencil, TrendingDown, TrendingUp } from 'lucide-react';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
-import useCurrentUser from '@/hooks/useCurrentUser';
+import { useCurrentUser } from '@/contexts/CurrentUserContext';
 import { toast } from '@/components/ui/use-toast';
 
 const CATEGORY_ENTITY = { income: 'IncomeCategory', expense: 'ExpenseCategory' };
 
 export default function Budgets() {
   const { can } = useCurrentUser();
-  const canEdit = can('canRecordDirect');
+  const canEdit = can('can_manage_budgets');
   const [budgets, setBudgets] = useState([]);
   const [branches, setBranches] = useState([]);
   const [categories, setCategories] = useState([]);

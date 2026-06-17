@@ -1,70 +1,105 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Card } from '@/components/ui/card';
-import { ArrowDownCircle, ArrowUpCircle, Shield, TrendingUp, TrendingDown } from 'lucide-react';
+import { BarChart3, TrendingUp, TrendingDown, Clock, Receipt, Building2 } from 'lucide-react';
+import { useCurrentUser } from '@/contexts/CurrentUserContext';
 import StatCard from '@/components/shared/StatCard';
-import PageHeader from '@/components/shared/PageHeader';
-import useCurrentUser from '@/hooks/useCurrentUser';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-const COLORS = ['hsl(221,83%,53%)', 'hsl(142,71%,45%)', 'hsl(38,92%,50%)', 'hsl(262,83%,58%)', 'hsl(0,84%,60%)'];
+const COLORS = ['#22c55e', '#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6'];
 
 export default function Dashboard() {
-  const { isBranchSpecific, userBranchId } = useCurrentUser();
-  const [transactions, setTransactions] = useState([]);
-  const [branches, setBranches] = useState([]);
+  const { userBranchId, accessScope, mustChangePassword } = useCurrentUser();
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      base44.entities.Transaction.list('-date', 500),
-      base44.entities.Branch.list()
-    ]).then(([txns, brs]) => {
-      const filtered = isBranchSpecific ? txns.filter(t => !t.branch_id || t.branch_id === userBranchId) : txns;
-      setTransactions(filtered);
-      setBranches(brs);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, []);
+    if (mustChangePassword) return;
+    base44.functions.invoke('getDashboardSummary', { branch_id: userBranchId })
+      .then(res => { setData(res.data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [userBranchId, mustChangePassword]);
 
   if (loading) return <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" /></div>;
 
-  const totalIncome = transactions.filter(t => t.type === 'income' && t.status === 'approved').reduce((s, t) => s + (t.amount || 0), 0);
-  const totalExpenses = transactions.filter(t => t.type === 'expense' && t.status === 'approved').reduce((s, t) => s + (t.amount || 0), 0);
-  const pendingCount = transactions.filter(t => t.status === 'pending').length;
-  const netBalance = totalIncome - totalExpenses;
-  const recentTransactions = transactions.filter(t => t.status !== 'voided').slice(0, 10);
-
-  const monthlyData = [];
-  const now = new Date();
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const month = d.toLocaleString('default', { month: 'short' });
-    const year = d.getFullYear();
-    const m = d.getMonth();
-    const income = transactions.filter(t => { const td = new Date(t.date); return t.type === 'income' && t.status === 'approved' && td.getMonth() === m && td.getFullYear() === year; }).reduce((s, t) => s + (t.amount || 0), 0);
-    const expense = transactions.filter(t => { const td = new Date(t.date); return t.type === 'expense' && t.status === 'approved' && td.getMonth() === m && td.getFullYear() === year; }).reduce((s, t) => s + (t.amount || 0), 0);
-    monthlyData.push({ month, income, expense });
-  }
-
-  const branchData = branches.map(b => ({ name: b.name, value: transactions.filter(t => t.branch_id === b.id && t.status === 'approved').reduce((s, t) => s + (t.amount || 0), 0) })).filter(d => d.value > 0);
-
-  const fmt = (n) => new Intl.NumberFormat('en', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
+  const summary = data || { incomeMTD: 0, expenseMTD: 0, netMTD: 0, pendingCount: 0, receiptNeededCount: 0, sixMonthSummary: [], branchSummary: [], recentTransactions: [] };
+  const fm = (n) => new Intl.NumberFormat().format(n || 0);
 
   return (
-    <div>
-      <PageHeader title="Dashboard" description="KingdomFlow financial overview" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard title="Total Income" value={fmt(totalIncome)} icon={ArrowDownCircle} color="success" />
-        <StatCard title="Total Expenses" value={fmt(totalExpenses)} icon={ArrowUpCircle} color="destructive" />
-        <StatCard title="Net Balance" value={fmt(netBalance)} icon={netBalance >= 0 ? TrendingUp : TrendingDown} color={netBalance >= 0 ? 'primary' : 'destructive'} />
-        <StatCard title="Pending" value={pendingCount} icon={Shield} color="warning" />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-heading font-semibold text-foreground">Dashboard</h1>
+        <p className="text-sm text-muted-foreground mt-1">Financial overview</p>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <Card className="lg:col-span-2 p-5"><h3 className="text-sm font-semibold mb-4">Income vs Expenses (6 Months)</h3><div className="h-64"><ResponsiveContainer width="100%" height="100%"><BarChart data={monthlyData}><CartesianGrid strokeDasharray="3 3" stroke="hsl(214,32%,91%)" /><XAxis dataKey="month" tick={{ fontSize: 12 }} /><YAxis tick={{ fontSize: 12 }} /><Tooltip /><Bar dataKey="income" fill="hsl(142,71%,45%)" radius={[4,4,0,0]} name="Income" /><Bar dataKey="expense" fill="hsl(0,84%,60%)" radius={[4,4,0,0]} name="Expense" /></BarChart></ResponsiveContainer></div></Card>
-        <Card className="p-5"><h3 className="text-sm font-semibold mb-4">By Branch</h3>{branchData.length > 0 ? <div className="h-64"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={branchData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" label={({ name }) => name}>{branchData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div> : <div className="h-64 flex items-center justify-center text-sm text-muted-foreground">No data</div>}</Card>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard title="Income (MTD)" value={fm(summary.incomeMTD)} icon={TrendingUp} color="success" />
+        <StatCard title="Expenses (MTD)" value={fm(summary.expenseMTD)} icon={TrendingDown} color="destructive" />
+        <StatCard title="Net Balance" value={fm(summary.netMTD)} icon={BarChart3} color="primary" />
+        <StatCard title="Pending Approvals" value={summary.pendingCount} icon={Clock} color="warning" />
       </div>
-      <Card className="p-5"><h3 className="text-sm font-semibold mb-4">Recent Transactions</h3>{recentTransactions.length === 0 ? <p className="text-sm text-muted-foreground py-8 text-center">No transactions yet</p> : <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b text-left"><th className="pb-2 font-medium text-muted-foreground">#</th><th className="pb-2 font-medium text-muted-foreground">Date</th><th className="pb-2 font-medium text-muted-foreground">Description</th><th className="pb-2 font-medium text-muted-foreground">Type</th><th className="pb-2 font-medium text-muted-foreground text-right">Amount</th><th className="pb-2 font-medium text-muted-foreground">Status</th></tr></thead><tbody>{recentTransactions.map(t => (<tr key={t.id} className="border-b last:border-0"><td className="py-2.5 text-xs text-muted-foreground">{t.transaction_number || '—'}</td><td className="py-2.5 text-muted-foreground">{t.date}</td><td className="py-2.5">{t.description || t.category_name || '—'}</td><td className="py-2.5"><span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${t.type === 'income' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>{t.type === 'income' ? <ArrowDownCircle className="w-3 h-3" /> : <ArrowUpCircle className="w-3 h-3" />}{t.type}</span></td><td className="py-2.5 text-right font-medium">{fmt(t.amount)}</td><td className="py-2.5"><span className={`text-xs font-medium px-2 py-0.5 rounded-full ${t.status === 'approved' ? 'bg-emerald-50 text-emerald-700' : t.status === 'rejected' ? 'bg-red-50 text-red-700' : t.status === 'voided' ? 'bg-muted text-muted-foreground' : 'bg-amber-50 text-amber-700'}`}>{t.status}</span></td></tr>))}</tbody></table></div>}</Card>
+
+      {summary.receiptNeededCount > 0 && (
+        <Card className="p-4 border-l-4 border-l-amber-500 bg-amber-50/50">
+          <div className="flex items-center gap-2 text-sm text-amber-800">
+            <Receipt className="w-4 h-4" /> {summary.receiptNeededCount} transaction{summary.receiptNeededCount !== 1 ? 's' : ''} need{summary.receiptNeededCount === 1 ? 's' : ''} receipt{summary.receiptNeededCount !== 1 ? 's' : ''}
+          </div>
+        </Card>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="p-4">
+          <h3 className="text-sm font-medium mb-3">6-Month Summary</h3>
+          {summary.sixMonthSummary?.length > 0 ? (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={summary.sixMonthSummary}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" fontSize={12} />
+                <YAxis fontSize={12} />
+                <Tooltip />
+                <Bar dataKey="income" fill="#22c55e" name="Income" />
+                <Bar dataKey="expense" fill="#ef4444" name="Expense" />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : <p className="text-sm text-muted-foreground text-center py-8">No data yet</p>}
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="text-sm font-medium mb-3">Branch Breakdown</h3>
+          {summary.branchSummary?.length > 0 ? (
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie data={summary.branchSummary} dataKey="income" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name }) => name}>
+                  {summary.branchSummary.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : <p className="text-sm text-muted-foreground text-center py-8">No data yet</p>}
+        </Card>
+      </div>
+
+      {summary.recentTransactions?.length > 0 && (
+        <Card>
+          <div className="p-4 border-b"><h3 className="text-sm font-medium">Recent Transactions</h3></div>
+          <div className="divide-y">
+            {summary.recentTransactions.map(t => (
+              <div key={t.id} className="px-4 py-3 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">{t.transaction_number}</p>
+                  <p className="text-xs text-muted-foreground">{t.description || t.category_name || t.type}</p>
+                </div>
+                <div className="text-right">
+                  <p className={`text-sm font-medium ${t.type === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
+                    {t.type === 'income' ? '+' : '-'}{fm(t.amount)}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">{t.date} · {t.status}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

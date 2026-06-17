@@ -46,10 +46,17 @@
       "enum": [
         "draft",
         "submitted",
+        "pending_approval",
+        "partially_approved",
         "approved",
         "rejected",
-        "fulfilled",
-        "cancelled"
+        "returned_for_correction",
+        "payment_pending",
+        "paid",
+        "receipt_needed",
+        "completed",
+        "cancelled",
+        "fulfilled"
       ],
       "default": "draft"
     },
@@ -59,6 +66,17 @@
     "approved_date": {
       "type": "string",
       "format": "date-time"
+    },
+    "approval_stage": {
+      "type": "string",
+      "enum": [
+        "none",
+        "department_leader",
+        "treasurer",
+        "pastor",
+        "church_admin"
+      ],
+      "default": "none"
     },
     "rejection_reason": {
       "type": "string"
