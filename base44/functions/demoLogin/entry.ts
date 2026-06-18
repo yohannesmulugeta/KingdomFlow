@@ -157,22 +157,16 @@ Deno.serve(async (req) => {
     if (existingUsers.length > 0) {
       const demoUser = existingUsers[0];
 
-      // Ensure church_role and other fields are set
-      if (!demoUser.church_role || demoUser.church_role !== DEMO_CHURCH_ROLE) {
-        await s.entities.User.update(demoUser.id, {
-          church_role: DEMO_CHURCH_ROLE,
-          access_scope: DEMO_ACCESS_SCOPE,
-          status: 'active',
-          must_change_password: false,
-          invitation_pending: false,
-        });
-      } else if (demoUser.must_change_password === true || demoUser.status !== 'active') {
-        await s.entities.User.update(demoUser.id, {
-          status: 'active',
-          must_change_password: false,
-          invitation_pending: false,
-        });
-      }
+      // Ensure church_role, verification, and other fields are set
+      await s.entities.User.update(demoUser.id, {
+        church_role: DEMO_CHURCH_ROLE,
+        access_scope: DEMO_ACCESS_SCOPE,
+        status: 'active',
+        must_change_password: false,
+        invitation_pending: false,
+        is_verified: true,
+        force_password_reset: false,
+      });
 
       return Response.json({ success: true, message: 'Demo account ready' });
     }
@@ -229,6 +223,8 @@ Deno.serve(async (req) => {
       status: 'active',
       must_change_password: false,
       invitation_pending: false,
+      is_verified: true,
+      force_password_reset: false,
     });
 
     return Response.json({ success: true, message: 'Demo account ready' });
