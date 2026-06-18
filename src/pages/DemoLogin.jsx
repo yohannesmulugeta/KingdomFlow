@@ -8,7 +8,7 @@ import { Church, ArrowRight, Mail, Key, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const DEMO_EMAIL = 'demo@kingdomflow.com';
-const DEMO_PASSWORD = 'password';
+const DEMO_PASSWORD = 'Demo@123!Strong';
 
 export default function DemoLogin() {
   const [email, setEmail] = useState('');

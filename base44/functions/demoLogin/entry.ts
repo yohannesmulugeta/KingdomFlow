@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 const DEMO_EMAIL = 'demo@kingdomflow.com';
-const DEMO_PASSWORD = 'password';
+const DEMO_PASSWORD = 'Demo@123!Strong';
 const DEMO_DISPLAY_NAME = 'Demo Admin';
 const DEMO_CHURCH_ROLE = 'church_admin';
 const DEMO_ACCESS_SCOPE = 'all_branches';
