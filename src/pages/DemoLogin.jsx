@@ -4,23 +4,42 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Church, ArrowRight, Key, User, Sparkles, Loader2, LogIn } from 'lucide-react';
+import { Church, ArrowRight, Mail, Key, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+
+const DEMO_EMAIL = 'demo@kingdomflow.com';
+const DEMO_PASSWORD = 'password';
+
 export default function DemoLogin() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [status, setStatus] = useState('');
+  const [needsSetup, setNeedsSetup] = useState(false);
+
+  const handleFillCredentials = () => {
+    setEmail(DEMO_EMAIL);
+    setPassword(DEMO_PASSWORD);
+    setError('');
+    setNeedsSetup(false);
+  };
 
   const handleLogin = async (e) => {
     if (e) e.preventDefault();
     setError('');
-    setStatus('');
+    setNeedsSetup(false);
     setLoading(true);
 
     try {
-      // Step 1: Validate demo credentials via backend
-      const res = await base44.functions.invoke('demoLogin', { username, password });
+      // Call backend to validate + seed data + prepare demo account
+      const res = await base44.functions.invoke('demoLogin', { email, password });
+
+      if (res.data?.needs_setup) {
+        setError(res.data.error);
+        setNeedsSetup(true);
+        setLoading(false);
+        return;
+      }
 
       if (res.data?.error) {
         setError(res.data.error);
@@ -28,45 +47,26 @@ export default function DemoLogin() {
         return;
       }
 
-      if (!res.data?.success) {
-        setError('Demo authentication failed. Please try again.');
-        setLoading(false);
-        return;
-      }
+      // Login with demo credentials
+      await base44.auth.loginViaEmailPassword(DEMO_EMAIL, DEMO_PASSWORD);
+      localStorage.setItem('kingdomflow_demo_mode', 'true');
+      window.location.href = '/';
+    } catch (err) {
+      const msg = err?.message || 'Login failed';
 
-      // Step 2: Authenticate with internal demo account
-      setStatus('Signing in to demo...');
-
-      try {
-        await base44.auth.loginViaEmailPassword(res.data.demo_email, res.data.demo_password);
-        localStorage.setItem('kingdomflow_demo_mode', 'true');
-        window.location.href = '/';
-      } catch (authErr) {
-        const msg = authErr.message || 'Authentication failed';
-        if (msg.includes('not found') || msg.includes('invalid') || msg.includes('credentials')) {
-          setError(
-            'Demo account not yet set up. A church administrator must first accept the demo invitation sent to ' +
-              res.data.demo_email +
-              '. Once the account is created, demo login will work.'
-          );
-        } else {
-          setError(msg);
-        }
+      if (msg.includes('not found') || msg.includes('invalid') || msg.includes('credentials')) {
+        setError(
+          'The demo account has not been created yet. ' +
+          'An invitation was sent to demo@kingdomflow.com. ' +
+          'Please accept the invitation in the Base44 Authentication dashboard, then try again.'
+        );
+        setNeedsSetup(true);
+      } else {
+        setError(msg);
       }
-    } catch {
-      setError('Unable to connect to demo server. Please try again.');
     }
 
     setLoading(false);
-  };
-
-  const handleEnterDemo = () => {
-    setUsername('admin');
-    setPassword('password');
-    // Submit after a tick so state updates
-    setTimeout(() => {
-      handleLogin();
-    }, 50);
   };
 
   return (
@@ -77,88 +77,63 @@ export default function DemoLogin() {
             <Church className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-2xl font-heading font-bold">KingdomFlow Demo</h1>
-          <p className="text-muted-foreground mt-1">Experience church financial management</p>
+          <p className="text-muted-foreground mt-1 max-w-sm mx-auto">
+            Explore how your church can manage income, expenses, funds, requests, approvals, and reports.
+          </p>
         </div>
 
         <Card className="shadow-lg border-2 border-primary/10">
           <CardHeader>
-            <CardTitle className="text-center font-heading">Try the Demo</CardTitle>
+            <CardTitle className="text-center font-heading">Demo Login</CardTitle>
             <CardDescription className="text-center">
-              Explore KingdomFlow with pre-loaded sample data
+              This is a demonstration account containing fake data only.
+              <br />Do not use this password in production.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Credentials display */}
             <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Demo Credentials</p>
               <div className="flex items-center gap-2 text-sm">
-                <User className="w-4 h-4 text-primary" />
-                <span className="text-muted-foreground">Username:</span>
-                <span className="font-mono font-semibold">admin</span>
+                <Mail className="w-4 h-4 text-primary shrink-0" />
+                <span className="text-muted-foreground">Demo Email:</span>
+                <span className="font-mono font-semibold text-sm">{DEMO_EMAIL}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <Key className="w-4 h-4 text-primary" />
-                <span className="text-muted-foreground">Password:</span>
-                <span className="font-mono font-semibold">password</span>
+                <Key className="w-4 h-4 text-primary shrink-0" />
+                <span className="text-muted-foreground">Demo Password:</span>
+                <span className="font-mono font-semibold text-sm">{DEMO_PASSWORD}</span>
               </div>
             </div>
 
-            {status && (
-              <div className="bg-emerald-50 text-emerald-700 text-sm rounded-lg p-3 text-center">
-                <Sparkles className="w-4 h-4 inline mr-1" />
-                {status}
-              </div>
-            )}
-
             {error && (
-              <div className="bg-red-50 text-red-700 text-sm rounded-lg p-3">
+              <div className={`text-sm rounded-lg p-3 ${needsSetup ? 'bg-amber-50 text-amber-800' : 'bg-red-50 text-red-700'}`}>
                 {error}
               </div>
             )}
 
-            {/* Quick Enter Demo button */}
+            {/* Fill Demo Credentials button */}
             <Button
-              onClick={handleEnterDemo}
-              disabled={loading}
-              variant="default"
-              className="w-full h-12 text-base bg-emerald-600 hover:bg-emerald-700"
-              size="lg"
+              onClick={handleFillCredentials}
+              variant="outline"
+              className="w-full"
+              type="button"
             >
-              {loading ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Entering Demo...
-                </>
-              ) : (
-                <>
-                  Enter Demo
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </>
-              )}
+              Fill Demo Credentials
             </Button>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">or sign in manually</span>
-              </div>
-            </div>
-
-            {/* Manual login form */}
+            {/* Login form */}
             <form onSubmit={handleLogin} className="space-y-3">
               <div className="space-y-1.5">
-                <Label htmlFor="demo-username">Username</Label>
+                <Label htmlFor="demo-email">Email</Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
-                    id="demo-username"
-                    type="text"
-                    autoComplete="username"
-                    placeholder="admin"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    id="demo-email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder={DEMO_EMAIL}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="pl-10 h-11"
                     required
                   />
@@ -173,7 +148,7 @@ export default function DemoLogin() {
                     id="demo-password"
                     type="password"
                     autoComplete="current-password"
-                    placeholder="password"
+                    placeholder={DEMO_PASSWORD}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10 h-11"
@@ -184,24 +159,33 @@ export default function DemoLogin() {
 
               <Button
                 type="submit"
-                disabled={loading || !username || !password}
-                variant="outline"
-                className="w-full h-11"
+                disabled={loading || !email || !password}
+                className="w-full h-11 bg-emerald-600 hover:bg-emerald-700"
               >
                 {loading ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Signing in...
+                  </>
                 ) : (
-                  <LogIn className="w-4 h-4 mr-2" />
+                  <>
+                    Log in
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
                 )}
-                Sign In
               </Button>
             </form>
           </CardContent>
         </Card>
 
-        <p className="text-center text-xs text-muted-foreground mt-6">
-          Demo Mode — Sample data only. Not connected to any real church.
-        </p>
+        <div className="text-center mt-6 space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Demo Mode — Sample data only. Not connected to any real church.
+          </p>
+          <Link to="/login" className="text-xs text-primary hover:underline">
+            Go to production login
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -1,9 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-const DEMO_USERNAME = 'admin';
+const DEMO_EMAIL = 'demo@kingdomflow.com';
 const DEMO_PASSWORD = 'password';
-const DEMO_INTERNAL_EMAIL = 'admin@kingdomflow.demo';
-const DEMO_INTERNAL_PASSWORD = 'KingdomFlowDemo1!';
+const DEMO_DISPLAY_NAME = 'Demo Admin';
+const DEMO_CHURCH_ROLE = 'church_admin';
+const DEMO_ACCESS_SCOPE = 'all_branches';
 
 Deno.serve(async (req) => {
   try {
@@ -12,23 +13,22 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { username, password } = body;
+    const { email, password } = body;
 
-    if (!username || !password) {
-      return Response.json({ error: 'Username and password are required' }, { status: 400 });
+    if (!email || !password) {
+      return Response.json({ error: 'Email and password are required' }, { status: 400 });
     }
 
-    if (username !== DEMO_USERNAME || password !== DEMO_PASSWORD) {
+    if (email !== DEMO_EMAIL || password !== DEMO_PASSWORD) {
       return Response.json({ error: 'Invalid demo credentials' }, { status: 401 });
     }
 
     const base44 = createClientFromRequest(req);
     const s = base44.asServiceRole;
 
-    // Ensure demo data exists
+    // ── Seed demo data if empty ──────────────────────────────────────
     const existingBranches = await s.entities.Branch.filter({});
     if (existingBranches.length === 0) {
-      // Seed demo data
       const mainBranch = await s.entities.Branch.create({ name: 'Main Branch', code: 'MAIN', city: 'Addis Ababa', address: 'Bole Road', phone: '+251-11-123-4567', manager_name: 'Demo Admin', is_active: true });
       const eastBranch = await s.entities.Branch.create({ name: 'East Branch', code: 'EAST', city: 'Addis Ababa', address: 'CMC Area', phone: '+251-11-234-5678', manager_name: 'Demo Leader', is_active: true });
       const westBranch = await s.entities.Branch.create({ name: 'West Branch', code: 'WEST', city: 'Addis Ababa', address: 'Lideta Area', phone: '+251-11-345-6789', manager_name: 'Demo Leader', is_active: true });
@@ -148,40 +148,90 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Ensure demo user invitation exists
+    // ── Ensure demo user exists and is properly configured ──────────
+    const normalizedEmail = DEMO_EMAIL.toLowerCase().trim();
+
+    // Check for existing user
+    const existingUsers = await s.entities.User.filter({ email: normalizedEmail });
+
+    if (existingUsers.length > 0) {
+      const demoUser = existingUsers[0];
+
+      // Ensure church_role and other fields are set
+      if (!demoUser.church_role || demoUser.church_role !== DEMO_CHURCH_ROLE) {
+        await s.entities.User.update(demoUser.id, {
+          church_role: DEMO_CHURCH_ROLE,
+          access_scope: DEMO_ACCESS_SCOPE,
+          status: 'active',
+          must_change_password: false,
+          invitation_pending: false,
+        });
+      } else if (demoUser.must_change_password === true || demoUser.status !== 'active') {
+        await s.entities.User.update(demoUser.id, {
+          status: 'active',
+          must_change_password: false,
+          invitation_pending: false,
+        });
+      }
+
+      return Response.json({ success: true, message: 'Demo account ready' });
+    }
+
+    // No user exists — try to invite
     const existingInvites = await s.entities.PendingInvitation.filter({
-      email: DEMO_INTERNAL_EMAIL,
+      email: normalizedEmail,
       status: 'pending',
     });
 
     if (existingInvites.length === 0) {
-      // Check if user already exists
-      const existingUsers = await s.entities.User.filter({ email: DEMO_INTERNAL_EMAIL });
-      if (existingUsers.length === 0) {
-        // Create invitation for demo user
-        await s.entities.PendingInvitation.create({
-          email: DEMO_INTERNAL_EMAIL,
-          church_role: 'church_admin',
-          access_scope: 'all_branches',
-          status: 'pending',
-          invited_by_id: 'demo_system',
-          invited_by_name: 'Demo System',
-          invited_at: new Date().toISOString(),
-        });
+      await s.entities.PendingInvitation.create({
+        email: normalizedEmail,
+        church_role: DEMO_CHURCH_ROLE,
+        access_scope: DEMO_ACCESS_SCOPE,
+        branch_id: '',
+        department_id: '',
+        status: 'pending',
+        invited_by_id: 'demo_system',
+        invited_by_name: 'KingdomFlow Demo',
+        invited_at: new Date().toISOString(),
+      });
 
-        try {
-          await s.users.inviteUser(DEMO_INTERNAL_EMAIL, 'admin');
-        } catch (_) {
-          // Invitation may already exist or email already used
-        }
+      try {
+        await s.users.inviteUser(normalizedEmail, 'admin');
+      } catch (inviteErr) {
+        // Invitation might already exist at platform level
       }
     }
 
-    return Response.json({
-      success: true,
-      demo_email: DEMO_INTERNAL_EMAIL,
-      demo_password: DEMO_INTERNAL_PASSWORD,
+    // Run reconciliation to check if user was created
+    try {
+      await base44.functions.invoke('reconcileInvitations', {});
+    } catch (_) {}
+
+    // Check again after reconciliation
+    const usersAfterRecon = await s.entities.User.filter({ email: normalizedEmail });
+
+    if (usersAfterRecon.length === 0) {
+      // User still doesn't exist — need manual acceptance
+      return Response.json({
+        success: false,
+        needs_setup: true,
+        error: 'Demo account invitation sent to demo@kingdomflow.com. It must be accepted once before login works. Please check the Base44 Authentication dashboard to accept the invitation, or create the user manually.',
+        invitation_sent: true,
+      });
+    }
+
+    // User exists — ensure fields are correct
+    const demoUser = usersAfterRecon[0];
+    await s.entities.User.update(demoUser.id, {
+      church_role: DEMO_CHURCH_ROLE,
+      access_scope: DEMO_ACCESS_SCOPE,
+      status: 'active',
+      must_change_password: false,
+      invitation_pending: false,
     });
+
+    return Response.json({ success: true, message: 'Demo account ready' });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
